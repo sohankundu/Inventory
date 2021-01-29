@@ -89,6 +89,13 @@ public final class ProductContract {
          */
         public final static String COLUMN_PRODUCT_PRICE = "price";
 
+        /**
+         * Image of the product.
+         *
+         * Type: BLOB
+         */
+        public final static String COLUMN_PRODUCT_IMAGE = "image";
+
 
     }
 

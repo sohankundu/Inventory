@@ -58,7 +58,7 @@ public class CatalogActivity extends AppCompatActivity implements
 
         ImageView emptyImage = (ImageView) findViewById(R.id.empty_image);
 
-        emptyImage.animate().alphaBy(100).setDuration(20000);
+        emptyImage.animate().alphaBy(100).setDuration(30000);
 
         // Find and set empty view on the ListView, so that it only shows when the list has 0 items.
         View emptyView = findViewById(R.id.empty_view);
@@ -174,7 +174,8 @@ public class CatalogActivity extends AppCompatActivity implements
                 ProductEntry._ID,
                 ProductEntry.COLUMN_PRODUCT_NAME,
                 ProductEntry.COLUMN_PRODUCT_QUANTITY,
-                ProductEntry.COLUMN_PRODUCT_PRICE};
+                ProductEntry.COLUMN_PRODUCT_PRICE,
+                ProductEntry.COLUMN_PRODUCT_IMAGE};
 
         // This loader will execute the ContentProvider's query method on a background thread
         return new CursorLoader(this,   // Parent activity context

@@ -7,6 +7,13 @@
     android:orientation="horizontal"
     android:padding="@dimen/activity_margin">
 
+    <ImageView
+        android:id="@+id/image"
+        android:layout_width="60dp"
+        android:layout_height="match_parent"
+        android:src="@drawable/outline_image_black_48"
+        android:paddingRight="16dp"/>
+
     <LinearLayout
         xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="0dp"

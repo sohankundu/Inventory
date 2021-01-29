@@ -1,5 +1,6 @@
 package com.example.android.inventory;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.LoaderManager;
 import android.content.ContentValues;
@@ -8,8 +9,11 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
@@ -23,17 +27,26 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.android.inventory.data.ProductContract.ProductEntry;
+import com.example.android.inventory.data.ProductProvider;
+
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 /**
  * Allows user to create a new product or edit an existing one.
  */
 public class EditorActivity extends AppCompatActivity implements
         LoaderManager.LoaderCallbacks<Cursor> {
+
+    /** Tag for the log messages */
+    public static final String LOG_TAG = EditorActivity.class.getSimpleName();
 
     /** Identifier for the product data loader */
     private static final int EXISTING_PRODUCT_LOADER = 0;
@@ -53,6 +66,12 @@ public class EditorActivity extends AppCompatActivity implements
     /** Button to decrease the product's quantity */
     private Button mDecreaseButton;
 
+    /** Button to upload product image */
+    private Button mUploadButton;
+
+    /** ImageView to display uploaded image */
+    private ImageView mImageView;
+
     private int Quantity;
 
     /** EditText field to enter the product's price */
@@ -61,7 +80,13 @@ public class EditorActivity extends AppCompatActivity implements
     /** Boolean flag that keeps track of whether the product has been edited (true) or not (false) */
     private boolean mProductHasChanged = false;
 
+    /** String to store product quantity */
     private String mQuantity;
+
+    /** Bitmap to store product image */
+    private Bitmap mImage;
+
+    public static final int REQUEST_CODE = 3;
 
     /**
      * OnTouchListener that listens for any user touches on a View, implying that they are modifying
@@ -115,11 +140,14 @@ public class EditorActivity extends AppCompatActivity implements
         mIncreaseButton = (Button) findViewById(R.id.increase);
         mDecreaseButton = (Button) findViewById(R.id.decrease);
         mPriceEditText = (EditText) findViewById(R.id.edit_product_price);
+        mUploadButton = (Button) findViewById(R.id.upload_button);
+        mImageView = (ImageView) findViewById(R.id.image_view);
 
         mNameEditText.setOnTouchListener(mTouchListener);
         mIncreaseButton.setOnTouchListener(mTouchListener);
         mDecreaseButton.setOnTouchListener(mTouchListener);
         mPriceEditText.setOnTouchListener(mTouchListener);
+        mUploadButton.setOnTouchListener(mTouchListener);
 
         Quantity = Integer.parseInt(mQuantityTextView.getText().toString());
 
@@ -158,6 +186,17 @@ public class EditorActivity extends AppCompatActivity implements
             }
         });
 
+        mUploadButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent();
+                intent.setType("image/*");
+                intent.setAction(Intent.ACTION_GET_CONTENT);
+                startActivityForResult(Intent.createChooser(intent, "Select Picture"),
+                        REQUEST_CODE);
+            }
+        });
+
 
     }
 
@@ -175,7 +214,7 @@ public class EditorActivity extends AppCompatActivity implements
         // and check if all the fields in the editor are blank
         if (mCurrentProductUri == null &&
                 TextUtils.isEmpty(nameString) && (quantityString.equals("0")) &&
-                TextUtils.isEmpty(priceString)) {
+                TextUtils.isEmpty(priceString) && (mImage == null)) {
             // Since no fields were modified, we can return early without creating a new product.
             // No need to create ContentValues and no need to do any ContentProvider operations.
             return;
@@ -194,6 +233,7 @@ public class EditorActivity extends AppCompatActivity implements
 
         int quantity = 0;
         float price = 0;
+        byte[] data = null;
 
         if (!TextUtils.isEmpty(quantityString)) {
             quantity = Integer.parseInt(quantityString);
@@ -204,6 +244,11 @@ public class EditorActivity extends AppCompatActivity implements
             price = Float.parseFloat(priceString);
         }
         values.put(ProductEntry.COLUMN_PRODUCT_PRICE, price);
+
+        if(mImage != null) {
+            data = getBitmapAsByteArray(mImage);
+        }
+        values.put(ProductEntry.COLUMN_PRODUCT_IMAGE, data);
 
         // Determine if this is a new or existing product by checking if
         // mCurrentProductUri is null or not
@@ -333,38 +378,36 @@ public class EditorActivity extends AppCompatActivity implements
      */
     @Override
     public void onBackPressed() {
-        Log.i("Back Press", "Pressed");
-        Log.i("Product Changed", String.valueOf(mProductHasChanged));
         // If the product hasn't changed, continue with handling back button press
         if (!mProductHasChanged) {
-            super.onBackPressed();
+
+            new AlertDialog.Builder(this)
+                    .setTitle("Really Exit?")
+                    .setMessage("Are you sure you want to exit?")
+                    .setNegativeButton(android.R.string.no, null)
+                    .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+
+                        public void onClick(DialogInterface arg0, int arg1) {
+                            EditorActivity.super.onBackPressed();
+                        }
+                    }).create().show();
+
             return;
         }
 
-        new AlertDialog.Builder(this)
-                .setTitle("Really Exit?")
-                .setMessage("Are you sure you want to exit?")
-                .setNegativeButton(android.R.string.no, null)
-                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-
-                    public void onClick(DialogInterface arg0, int arg1) {
-                        EditorActivity.super.onBackPressed();
+        // Otherwise if there are unsaved changes, setup a dialog to warn the user.
+        // Create a click listener to handle the user confirming that changes should be discarded.
+        DialogInterface.OnClickListener discardButtonClickListener =
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        // User clicked "Discard" button, close the current activity.
+                        finish();
                     }
-                }).create().show();
+                };
 
-//        // Otherwise if there are unsaved changes, setup a dialog to warn the user.
-//        // Create a click listener to handle the user confirming that changes should be discarded.
-//        DialogInterface.OnClickListener discardButtonClickListener =
-//                new DialogInterface.OnClickListener() {
-//                    @Override
-//                    public void onClick(DialogInterface dialogInterface, int i) {
-//                        // User clicked "Discard" button, close the current activity.
-//                        finish();
-//                    }
-//                };
-//
-//        // Show dialog that there are unsaved changes
-//        showUnsavedChangesDialog(discardButtonClickListener);
+        // Show dialog that there are unsaved changes
+        showUnsavedChangesDialog(discardButtonClickListener);
     }
 
     @Override
@@ -375,7 +418,8 @@ public class EditorActivity extends AppCompatActivity implements
                 ProductEntry._ID,
                 ProductEntry.COLUMN_PRODUCT_NAME,
                 ProductEntry.COLUMN_PRODUCT_QUANTITY,
-                ProductEntry.COLUMN_PRODUCT_PRICE };
+                ProductEntry.COLUMN_PRODUCT_PRICE,
+                ProductEntry.COLUMN_PRODUCT_IMAGE};
 
         // This loader will execute the ContentProvider's query method on a background thread
         return new CursorLoader(this,   // Parent activity context
@@ -400,16 +444,24 @@ public class EditorActivity extends AppCompatActivity implements
             int nameColumnIndex = cursor.getColumnIndex(ProductEntry.COLUMN_PRODUCT_NAME);
             int quantityColumnIndex = cursor.getColumnIndex(ProductEntry.COLUMN_PRODUCT_QUANTITY);
             int priceColumnIndex = cursor.getColumnIndex(ProductEntry.COLUMN_PRODUCT_PRICE);
+            int imageColumnIndex = cursor.getColumnIndex(ProductEntry.COLUMN_PRODUCT_IMAGE);
+
 
             // Extract out the value from the Cursor for the given column index
             String name = cursor.getString(nameColumnIndex);
             Quantity = cursor.getInt(quantityColumnIndex);
             float price = cursor.getInt(priceColumnIndex);
+            byte[] imgByte = cursor.getBlob(imageColumnIndex);
 
             // Update the views on the screen with the values from the database
             mNameEditText.setText(name);
             mQuantityTextView.setText(String.valueOf(Quantity));
             mPriceEditText.setText(String.valueOf(price));
+            if (imgByte != null) {
+                mImage = BitmapFactory.decodeByteArray(imgByte, 0, imgByte.length);
+                mImageView.setImageBitmap(mImage);
+                mUploadButton.setText(R.string.change_image);
+            }
 
         }
     }
@@ -420,6 +472,7 @@ public class EditorActivity extends AppCompatActivity implements
         mNameEditText.setText("");
         mQuantityTextView.setText(String.valueOf(Quantity));
         mPriceEditText.setText("");
+        mImageView.setImageBitmap(null);
     }
 
     /**
@@ -506,4 +559,35 @@ public class EditorActivity extends AppCompatActivity implements
         // Close the activity
         finish();
     }
+
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        try {
+            switch (requestCode) {
+
+                case REQUEST_CODE:
+                    if (resultCode == Activity.RESULT_OK) {
+                        //data gives you the image uri. Try to convert that to bitmap
+                        Uri selectedImage = data.getData();
+                        mImage = MediaStore.Images.Media.getBitmap(this.getContentResolver(),
+                                selectedImage);
+                        mImageView.setImageBitmap(mImage);
+                        mUploadButton.setText(R.string.change_image);
+                        break;
+                    } else if (resultCode == Activity.RESULT_CANCELED) {
+                        Log.e(LOG_TAG, "Selecting picture cancelled");
+                    }
+                    break;
+            }
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Exception in onActivityResult : " + e.getMessage());
+        }
+    }
+
+    public static byte[] getBitmapAsByteArray(Bitmap bitmap) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 0, outputStream);
+        return outputStream.toByteArray();
+    }
+
 }

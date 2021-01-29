@@ -66,8 +66,7 @@
                 android:textAppearance="?android:textAppearanceLarge"
                 android:textColor="#FFFFFF"
                 android:textStyle="bold"
-                android:alpha="0.8"
-                android:focusable="false"/>
+                android:alpha="0.8"/>
 
             <TextView
                 android:id="@+id/quantity"
@@ -126,4 +125,65 @@
                 style="@style/EditorFieldStyle" />
         </RelativeLayout>
     </LinearLayout>
+
+    <!-- Image category -->
+    <LinearLayout
+        android:id="@+id/container_image"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <!-- Label -->
+        <TextView
+            android:text="@string/category_image"
+            style="@style/CategoryStyle" />
+
+        <!-- Input fields -->
+        <RelativeLayout
+            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_weight="2"
+            android:paddingLeft="4dp">
+
+            <!-- Button to upload image -->
+            <Button
+                android:id="@+id/upload_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/upload_image"
+                style="@style/Widget.AppCompat.Button.Colored"
+                android:backgroundTint="@color/editorColorPrimary"
+                android:alpha="0.8"
+                android:textColor="#FFFFFF"/>
+
+        </RelativeLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            style="@style/CategoryStyle"/>
+
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_weight="2"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:paddingLeft="20dp">
+
+            <ImageView
+                android:id="@+id/image_view"
+                android:layout_height="200dp"
+                android:layout_width="200dp"
+                android:padding="4dp"
+                android:layout_alignParentTop="true"
+                android:background="@drawable/image_border"/>
+
+        </RelativeLayout>
+
+    </LinearLayout>
+
 </LinearLayout>

@@ -85,4 +85,7 @@
     <string name="unit_product_price">₹</string>
     <string name="button_text">Sell</string>
     <string name="catalog_insert_dummy_failed">Dummy data already exists</string>
+    <string name="category_image">Image</string>
+    <string name="upload_image">Upload Image</string>
+    <string name="change_image">Change Image</string>
 </resources>

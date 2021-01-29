@@ -7,6 +7,8 @@ import android.content.ContextWrapper;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
@@ -15,6 +17,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CursorAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -70,12 +73,14 @@ public class ProductCursorAdapter extends CursorAdapter {
         TextView quantityTextView = (TextView) view.findViewById(R.id.quantity);
         TextView priceTextView = (TextView) view.findViewById(R.id.price);
         Button sellButton = (Button) view.findViewById(R.id.sell_button);
+        ImageView imageView = (ImageView) view.findViewById(R.id.image);
 
         // Find the columns of product attributes that we're interested in
         int idColumnIndex = cursor.getColumnIndex(ProductEntry._ID);
         int nameColumnIndex = cursor.getColumnIndex(ProductEntry.COLUMN_PRODUCT_NAME);
         int quantityColumnIndex = cursor.getColumnIndex(ProductEntry.COLUMN_PRODUCT_QUANTITY);
         int priceColumnIndex = cursor.getColumnIndex(ProductEntry.COLUMN_PRODUCT_PRICE);
+        int imageColumnIndex = cursor.getColumnIndex(ProductEntry.COLUMN_PRODUCT_IMAGE);
 
         final int quantity = cursor.getInt(quantityColumnIndex);
 
@@ -91,11 +96,16 @@ public class ProductCursorAdapter extends CursorAdapter {
         String productName = cursor.getString(nameColumnIndex);
         String productQuantity = "Qty: " + String.valueOf(quantity);
         String productPrice = "₹ " + String.valueOf(cursor.getFloat(priceColumnIndex));
+        byte[] imgByte = cursor.getBlob(imageColumnIndex);
 
         // Update the TextViews with the attributes for the current product
         nameTextView.setText(productName);
         quantityTextView.setText(productQuantity);
         priceTextView.setText(productPrice);
+        if (imgByte != null) {
+            Bitmap bitmapImage = BitmapFactory.decodeByteArray(imgByte, 0, imgByte.length);
+            imageView.setImageBitmap(bitmapImage);
+        }
 
         sellButton.setOnClickListener(new View.OnClickListener() {
             @Override
